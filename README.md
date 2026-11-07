@@ -10,9 +10,6 @@ A simple, full-screen Flappy Bird game built using HTML, CSS, and JavaScript.
 - Animated score celebrations
 - Keyboard and mouse controls
 
-### How to Play
-Open `flappy_bird_full_screen.html` in your browser and click **Start Game**.
-
 **Controls:** Space, W, Up Arrow, or Mouse Click.
 
 ### Technologies
