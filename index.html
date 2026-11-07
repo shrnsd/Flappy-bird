@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Flappy Bird - Full Screen</title>
+    <style>
+        /* CSS STYLES */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #333;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Prevent scrollbars */
+            font-family: 'Arial', sans-serif;
+            transition: background 0.5s;
+        }
+
+        /* Celebration Background Animation */
+        body.celebrate {
+            animation: discoBackground 0.5s infinite;
+        }
+
+        @keyframes discoBackground {
+            0% { background-color: #e74c3c; }
+            25% { background-color: #f1c40f; }
+            50% { background-color: #2ecc71; }
+            75% { background-color: #9b59b6; }
+            100% { background-color: #3498db; }
+        }
+
+        /* Game Container fills the screen */
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* High Score HUD */
+        #highScoreHud {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 24px; 
+            text-shadow: 2px 2px 0 #000;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        /* UI Overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 30;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            color: white;
+            font-size: 60px; 
+            margin-bottom: 20px;
+            text-shadow: 4px 4px #000;
+        }
+
+        p {
+            color: #eee;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .btn {
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 22px;
+            margin: 15px;
+            cursor: pointer;
+            border-radius: 8px;
+            border-bottom: 5px solid #d35400;
+            transition: transform 0.1s;
+            width: 250px;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            border-bottom: none;
+        }
+
+        .btn-secondary {
+            background-color: #3498db;
+            border-bottom: 5px solid #2980b9;
+        }
+
+        .btn-danger {
+            background-color: #c0392b;
+            border-bottom: 5px solid #96281b;
+            font-size: 16px;
+            width: 180px;
+            margin-top: 30px;
+        }
+
+        /* Customization Menu Styles */
+        .custom-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            width: 400px;
+            text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .preview {
+            width: 60px; 
+            height: 60px;
+            border: 1px solid #ccc;
+            display: inline-block;
+            margin-top: 5px;
+            background-color: #f0f0f0;
+            text-align: center;
+            line-height: 60px;
+            font-size: 10px;
+        }
+
+        /* FULL SCREEN POPUPS (Crazy Text) */
+        #globalPopup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 9999;
+            text-align: center;
+        }
+
+        .crazy-text {
+            font-family: 'Impact', sans-serif;
+            font-size: 12rem; 
+            text-transform: uppercase;
+            letter-spacing: 10px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .chikkommm-style {
+            color: #fff;
+            text-shadow: 
+                5px 5px 0 #FF00FF,
+                -5px -5px 0 #00FFFF,
+                10px 10px 0 #000;
+            transform: rotate(-10deg);
+            animation: rainbowShake 0.5s infinite;
+        }
+
+        .jilooo-style {
+            color: #e74c3c;
+            text-shadow: 8px 8px 0 #000;
+            font-size: 14rem;
+            animation: violentShake 0.2s infinite;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; }
+            100% { transform: scale(1) rotate(-10deg); opacity: 1; }
+        }
+
+        @keyframes rainbowShake {
+            0% { color: #ff0000; transform: rotate(-10deg) scale(1); }
+            25% { color: #00ff00; transform: rotate(10deg) scale(1.1); }
+            50% { color: #0000ff; transform: rotate(-10deg) scale(1); }
+            75% { color: #ffff00; transform: rotate(10deg) scale(1.1); }
+            100% { color: #ff00ff; transform: rotate(-10deg) scale(1); }
+        }
+
+        @keyframes violentShake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="globalPopup" class="hidden"></div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="highScoreHud">High Score: 0</div>
+
+        <div id="mainMenu" class="overlay">
+            <h1>FLAPPY BIRD</h1>
+            <button class="btn" id="startBtn">Start Game</button>
+            <button class="btn btn-secondary" id="customBtn">Customize</button>
+            
+            <button class="btn btn-danger" id="resetScoreBtn">Reset Record</button>
+
+            <p style="margin-top: 20px;">Controls: Space, W, or Up Arrow</p>
+        </div>
+
+        <div id="customMenu" class="overlay hidden">
+            <div class="custom-box">
+                <h3 style="margin-top:0; color:#333; font-size: 28px;">Customize Game</h3>
+                
+                <div class="input-group">
+                    <label>Character Image:</label>
+                    <input type="file" id="imgInput" accept="image/*">
+                    <div class="note">Supported: PNG, JPG, GIF, WebP</div>
+                    <div id="imgPreview" class="preview">N/A</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Jump Sound:</label>
+                    <input type="file" id="audioInput" accept="audio/*">
+                    <div class="note">Supported: MP3, WAV, OGG</div>
+                    <div id="audioStatus" class="note" style="color:blue;">Using Default</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Hit/Game Over Sound:</label>
+                    <input type="file" id="hitAudioInput" accept="audio/*">
+                    <div class="note">Supported: MP3, WAV, OGG</div>
+                    <div id="hitAudioStatus" class="note" style="color:blue;">Using Default</div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn" id="saveBtn" style="width: 100%;">Play With Changes</button>
+                    <button class="btn btn-secondary" id="backBtn" style="width: 100%; margin-top: 10px;">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="gameOverScreen" class="overlay hidden">
+            <h1>GAME OVER</h1>
+            <p style="font-size: 30px;">Score: <span id="finalScore">0</span></p>
+            <button class="btn" id="restartBtn">Try Again</button>
+            <button class="btn btn-secondary" id="homeBtn">Home</button>
+        </div>
+    </div>
+
+    <script>
+        /* JAVASCRIPT LOGIC */
+
+        // --- 1. CONFIGURATION & VARIABLES ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // FULL SCREEN RESIZE LOGIC
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Initial call
+
+        // High Score Logic
+        let highScore = parseInt(localStorage.getItem('flappyHighScore')) || 0;
+        document.getElementById('highScoreHud').innerText = "High Score: " + highScore;
+
+        // Game State
+        let frames = 0;
+        let score = 0;
+        let isRunning = false;
+        let isGameOver = false;
+        let gameStarted = false; // NEW: Tracks if the player has triggered the start
+        let animationId;
+        
+        // Celebration State
+        let sessionStartHighScore = 0; 
+        let hasHighscoreCelebrated = false; 
+        let celebrationTimeout = null; 
+
+        // Entities
+        // Default values (used if no image is uploaded)
+        const bird = {
+            x: 100, 
+            y: canvas.height / 2,
+            w: 60, // Default Width
+            h: 60, // Default Height
+            radius: 12,
+            speed: 0,
+            gravity: 0.25,
+            jump: 4.6
+        };
+
+        const pipes = {
+            position: [],
+            w: 80,
+            gap: 150, // Default Gap
+            dx: 3
+        };
+
+        // Assets (Default)
+        let userBirdImg = null; 
+        
+        // Audio Context setup
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        let userAudioBuffer = null;
+        let useUserAudio = false;
+
+        let userHitAudioBuffer = null;
+        let useUserHitAudio = false;
+
+        // --- 2. HELPERS FOR POPUPS ---
+
+        function showCrazyPopup(text, styleClass) {
+            const popup = document.getElementById('globalPopup');
+            if (celebrationTimeout) clearTimeout(celebrationTimeout);
+
+            popup.innerHTML = `<div class="crazy-text ${styleClass}">${text}</div>`;
+            popup.classList.remove('hidden');
+
+            celebrationTimeout = setTimeout(() => {
+                popup.classList.add('hidden');
+                popup.innerHTML = '';
+            }, 1000); 
+        }
+
+        function triggerCelebration() {
+            document.body.classList.add('celebrate'); 
+            showCrazyPopup("chikkommm!", "chikkommm-style");
+            
+            setTimeout(() => {
+                document.body.classList.remove('celebrate');
+            }, 1000);
+        }
+
+        // --- 3. GAME LOGIC FUNCTIONS ---
+
+        function drawBird() {
+            if (userBirdImg) {
+                // FIXED: Round to integers to prevent sub-pixel artifacting/smearing
+                ctx.drawImage(
+                    userBirdImg, 
+                    Math.floor(bird.x), 
+                    Math.floor(bird.y), 
+                    Math.floor(bird.w), 
+                    Math.floor(bird.h)
+                );
+            } else {
+                // Default Drawn Bird (Square)
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(bird.x, bird.y, bird.w, bird.h);
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(bird.x, bird.y, bird.w, bird.h);
+                // Simple Face
+                ctx.fillStyle = "black";
+                ctx.fillRect(bird.x + bird.w - 15, bird.y + 10, 8, 8); // Eye
+                ctx.fillStyle = "orange";
+                ctx.fillRect(bird.x + bird.w - 10, bird.y + 25, 10, 10); // Beak
+            }
+        }
+
+        function playJumpSound() {
+            if (useUserAudio && userAudioBuffer) {
+                const source = audioCtx.createBufferSource();
+                source.buffer = userAudioBuffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+            } else {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.15);
+            }
+        }
+
+        function playHitSound() {
+            if (useUserHitAudio && userHitAudioBuffer) {
+                const source = audioCtx.createBufferSource();
+                source.buffer = userHitAudioBuffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+            } else {
+                // Sad Trombone (Synthesized)
+                const now = audioCtx.currentTime;
+                
+                // Note 1
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(392, now); 
+                osc1.frequency.linearRampToValueAtTime(370, now + 0.3); 
+                gain1.gain.setValueAtTime(0.1, now);
+                gain1.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+
+                // Note 2
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'sawtooth';
+                osc2.frequency.setValueAtTime(370, now + 0.3); 
+                osc2.frequency.linearRampToValueAtTime(349, now + 0.6); 
+                gain2.gain.setValueAtTime(0.1, now + 0.3);
+                gain2.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(now + 0.3);
+                osc2.stop(now + 0.6);
+
+                // Note 3
+                const osc3 = audioCtx.createOscillator();
+                const gain3 = audioCtx.createGain();
+                osc3.type = 'sawtooth';
+                osc3.frequency.setValueAtTime(349, now + 0.6); 
+                osc3.frequency.linearRampToValueAtTime(329, now + 0.9); 
+                gain3.gain.setValueAtTime(0.1, now + 0.6);
+                gain3.gain.linearRampToValueAtTime(0, now + 0.9);
+                osc3.connect(gain3);
+                gain3.connect(audioCtx.destination);
+                osc3.start(now + 0.6);
+                osc3.stop(now + 0.9);
+
+                // Note 4 (Slide)
+                const osc4 = audioCtx.createOscillator();
+                const gain4 = audioCtx.createGain();
+                osc4.type = 'sawtooth';
+                osc4.frequency.setValueAtTime(329, now + 0.9); 
+                osc4.frequency.linearRampToValueAtTime(150, now + 2.0); 
+                gain4.gain.setValueAtTime(0.1, now + 0.9);
+                gain4.gain.linearRampToValueAtTime(0, now + 2.0);
+                osc4.connect(gain4);
+                gain4.connect(audioCtx.destination);
+                osc4.start(now + 0.9);
+                osc4.stop(now + 2.0);
+            }
+        }
+
+        function updateBird() {
+            // NEW: If game hasn't started yet, HOVER instead of fall
+            if (!gameStarted) {
+                // Gentle bobbing motion
+                // Use a separate counter or frames (but frames doesn't update, so we use performance.now)
+                const hoverOffset = Math.sin(Date.now() / 300) * 5; 
+                bird.y = (canvas.height / 2) + hoverOffset;
+                return; 
+            }
+
+            bird.speed += bird.gravity;
+            bird.y += bird.speed;
+
+            // Floor Collision
+            if (bird.y + bird.h >= canvas.height) {
+                bird.y = canvas.height - bird.h;
+                triggerGameOver();
+            }
+        }
+
+        function drawPipes() {
+            // NEW: Don't spawn/move pipes until the user presses Jump
+            if (!gameStarted) return;
+
+            // Adjust pipe spawning based on speed so gap feels natural
+            if (frames % 120 === 0) {
+                const maxTop = canvas.height - pipes.gap - 100; 
+                const minTop = 50; 
+                const topHeight = Math.floor(Math.random() * (maxTop - minTop + 1) + minTop);
+                
+                pipes.position.push({
+                    x: canvas.width, 
+                    y: topHeight
+                });
+            }
+
+            for (let i = 0; i < pipes.position.length; i++) {
+                let p = pipes.position[i];
+                
+                p.x -= pipes.dx;
+
+                // Draw Pipes
+                ctx.fillStyle = "#2ecc71"; 
+                ctx.fillRect(p.x, 0, pipes.w, p.y);
+                ctx.strokeStyle = "#27ae60";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(p.x, 0, pipes.w, p.y);
+
+                let bottomPipeY = p.y + pipes.gap;
+                let bottomPipeHeight = canvas.height - bottomPipeY;
+                ctx.fillRect(p.x, bottomPipeY, pipes.w, bottomPipeHeight);
+                ctx.strokeRect(p.x, bottomPipeY, pipes.w, bottomPipeHeight);
+
+                // Collision Check
+                if (bird.x + bird.w > p.x && bird.x < p.x + pipes.w) {
+                    if (bird.y < p.y || bird.y + bird.h > bottomPipeY) {
+                        triggerGameOver();
+                    }
+                }
+
+                // Score Update
+                if (p.x + pipes.w < bird.x && !p.passed) {
+                    score++;
+                    p.passed = true;
+                    
+                    // --- CELEBRATION LOGIC ---
+                    let shouldCelebrate = false;
+
+                    // CASE 1: No High Score (Fresh or Reset)
+                    if (sessionStartHighScore === 0) {
+                        if (score % 10 === 0) shouldCelebrate = true;
+                    } 
+                    // CASE 2: Has Existing High Score
+                    else {
+                        if (score > sessionStartHighScore) {
+                            if (!hasHighscoreCelebrated) {
+                                shouldCelebrate = true;
+                                hasHighscoreCelebrated = true;
+                            }
+                            else if (score % 10 === 0) {
+                                shouldCelebrate = true;
+                            }
+                        }
+                    }
+
+                    if (shouldCelebrate) triggerCelebration();
+                    
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem('flappyHighScore', highScore);
+                        document.getElementById('highScoreHud').innerText = "High Score: " + highScore;
+                    }
+                }
+
+                if (p.x + pipes.w <= 0) {
+                    pipes.position.shift();
+                    i--; 
+                }
+            }
+        }
+
+        function drawScore() {
+            ctx.fillStyle = "#FFF";
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 2;
+            ctx.font = "50px Arial"; 
+            ctx.fillText(score, canvas.width / 2 - 25, 80);
+            ctx.strokeText(score, canvas.width / 2 - 25, 80);
+            
+            // Draw "Get Ready" text if not started
+            if (!gameStarted && isRunning) {
+                ctx.font = "30px Arial";
+                ctx.fillText("PRESS JUMP TO START", canvas.width / 2 - 160, canvas.height / 2 + 80);
+                ctx.strokeText("PRESS JUMP TO START", canvas.width / 2 - 160, canvas.height / 2 + 80);
+            }
+        }
+
+        function drawBackground() {
+            // If celebrating, we clear the canvas to let the Disco CSS Body background show through
+            if (document.body.classList.contains('celebrate')) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = "#70c5ce";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Ground
+                ctx.fillStyle = "#ded895";
+                ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+            }
+        }
+
+        function loop() {
+            if (!isRunning) return;
+
+            drawBackground();
+            drawPipes();
+            updateBird();
+            drawBird();
+            drawScore();
+            
+            // NEW: Only increment frames if the game has officially started
+            if (gameStarted) {
+                frames++;
+            }
+            animationId = requestAnimationFrame(loop);
+        }
+
+        // --- 4. CONTROLS ---
+
+        function jump() {
+            if (isGameOver) return;
+            
+            // NEW: If game hasn't "Started" yet, pressing jump starts it!
+            if (isRunning && !gameStarted) {
+                gameStarted = true;
+            }
+            
+            bird.speed = -bird.jump;
+            playJumpSound();
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.code === 'KeyW' || e.code === 'ArrowUp' || e.code === 'Space') {
+                e.preventDefault(); 
+                
+                // --- FIXED: PREVENT REPEAT ON KEY HOLD ---
+                if (e.repeat) return; 
+
+                // Even if not "Started" yet, we want to capture input to TRIGGER start
+                if (isRunning) {
+                    jump();
+                }
+            }
+        });
+
+        canvas.addEventListener('mousedown', function() {
+            if (isRunning && !isGameOver) jump();
+        });
+
+        // --- 5. GAME STATES ---
+
+        function initGame() {
+            bird.x = 100;
+            bird.y = canvas.height / 2; // Start in middle of screen
+            bird.speed = 0;
+            pipes.position = [];
+            score = 0;
+            frames = 0;
+            isGameOver = false;
+            isRunning = true;
+            
+            // NEW: Set game to "Ready/Hover" state
+            gameStarted = false;
+            
+            // Reset Celebration Flags
+            sessionStartHighScore = highScore; 
+            hasHighscoreCelebrated = false;
+            
+            document.body.classList.remove('celebrate');
+            if (celebrationTimeout) {
+                clearTimeout(celebrationTimeout);
+                document.getElementById('globalPopup').classList.add('hidden');
+            }
+
+            // UI
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('customMenu').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            
+            loop();
+        }
+
+        function triggerGameOver() {
+            if (isGameOver) return; 
+            
+            isRunning = false;
+            isGameOver = true;
+            cancelAnimationFrame(animationId);
+            
+            playHitSound();
+            
+            document.body.classList.remove('celebrate');
+
+            showCrazyPopup("jilooo!", "jilooo-style");
+
+            setTimeout(() => {
+                document.getElementById('finalScore').innerText = score;
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+            }, 1000);
+        }
+
+        // --- 6. RESET HIGH SCORE LOGIC ---
+        
+        document.getElementById('resetScoreBtn').addEventListener('click', function() {
+            const confirmReset = confirm("Are you sure you want to clear your High Score record?");
+            if (confirmReset) {
+                localStorage.removeItem('flappyHighScore');
+                highScore = 0;
+                sessionStartHighScore = 0; 
+                document.getElementById('highScoreHud').innerText = "High Score: 0";
+                alert("Score cleared!");
+            }
+        });
+
+        // --- 7. CUSTOMIZATION LOGIC ---
+
+        // Image Handling (Modified for Aspect Ratio, Dynamic Gap AND Glitch Fix)
+        const imgInput = document.getElementById('imgInput');
+        imgInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        userBirdImg = img;
+                        
+                        // --- NEW ASPECT RATIO LOGIC ---
+                        const aspectRatio = img.width / img.height;
+                        const maxDim = 70; // Max pixels for largest side to maintain clarity
+                        
+                        if (aspectRatio >= 1) {
+                            // Landscape or Square
+                            bird.w = maxDim;
+                            // FIXED: Math.floor prevents subpixel flicker
+                            bird.h = Math.floor(maxDim / aspectRatio);
+                        } else {
+                            // Portrait
+                            // FIXED: Math.floor prevents subpixel flicker
+                            bird.h = maxDim;
+                            bird.w = Math.floor(maxDim * aspectRatio);
+                        }
+
+                        // --- DYNAMIC GAP ADJUSTMENT ---
+                        // Ensure gap is always playable. Minimum gap 150, or BirdHeight + 110
+                        pipes.gap = Math.max(150, bird.h + 110);
+                        
+                        // Update Preview
+                        document.getElementById('imgPreview').innerHTML = "";
+                        document.getElementById('imgPreview').style.backgroundImage = `url(${event.target.result})`;
+                        document.getElementById('imgPreview').style.backgroundSize = "contain"; // Keep ratio
+                        document.getElementById('imgPreview').style.backgroundRepeat = "no-repeat";
+                        document.getElementById('imgPreview').style.backgroundPosition = "center";
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        const audioInput = document.getElementById('audioInput');
+        audioInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const arrayBuffer = event.target.result;
+                    audioCtx.decodeAudioData(arrayBuffer, function(decodedBuffer) {
+                        userAudioBuffer = decodedBuffer;
+                        useUserAudio = true;
+                        document.getElementById('audioStatus').innerText = "Custom Sound Loaded!";
+                        document.getElementById('audioStatus').style.color = "green";
+                    });
+                }
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        const hitAudioInput = document.getElementById('hitAudioInput');
+        hitAudioInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const arrayBuffer = event.target.result;
+                    audioCtx.decodeAudioData(arrayBuffer, function(decodedBuffer) {
+                        userHitAudioBuffer = decodedBuffer;
+                        useUserHitAudio = true;
+                        document.getElementById('hitAudioStatus').innerText = "Custom Sound Loaded!";
+                        document.getElementById('hitAudioStatus').style.color = "green";
+                    });
+                }
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        // --- 8. MENU NAVIGATION ---
+
+        document.getElementById('startBtn').addEventListener('click', function() {
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+            initGame();
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', initGame);
+
+        document.getElementById('customBtn').addEventListener('click', function() {
+             document.getElementById('mainMenu').classList.add('hidden');
+             document.getElementById('customMenu').classList.remove('hidden');
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', function() {
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+            initGame();
+        });
+
+        document.getElementById('backBtn').addEventListener('click', function() {
+            document.getElementById('customMenu').classList.add('hidden');
+            document.getElementById('mainMenu').classList.remove('hidden');
+        });
+
+        document.getElementById('homeBtn').addEventListener('click', function() {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('mainMenu').classList.remove('hidden');
+            drawBackground();
+        });
+
+        // Initial render
+        drawBackground();
+
+    </script>
+</body>
+</html>
